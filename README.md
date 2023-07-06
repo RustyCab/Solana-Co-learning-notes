@@ -19,87 +19,63 @@
 
 - [x] 8. [Solan 前端模版配置](./how-to-setting-solana-front.md)
 
-## Module1
+## Module1: 客户端与 Solana 网络的交互
 
-### Solana客户端开发
+### 从网络读取数据
+### 将数据写入网络
+### 与钱包互动
+### 序列化自定义指令数据
+### 反序列化自定义帐户数据
+### 页面、顺序和过滤器自定义帐户数据
 
-- [x] 1. [从Solana网络读取数据](./module1/read-data-from-the-solana-network/README.md)
-- [x] 2. [将数据写入 Solana 网络](./module1/write-data-to-the-blockchain/README.md)
-- [x] 3. [构建交互脚本](./module1/build-an-interaction-script/README.md)
+## Module 2: 客户端与常见 Solana 程序的交互
 
+### 使用Token Program 创建Token
+### 通过Token Swap Program 交换Token
+### 使用 Metaplex 创建 Solana NFT
 
-### 钱包和前端
+## 模块3: 基本 Solana 程序开发
 
-- [x] 1. [连接到钱包](./module1/connecting-to-wallet/README.md)
-- [x] 2. [与程序交互](./module1/interact-with-a-program/README.md)
+### Hello, World
+### 创建基本程序，第 1 部分 - 处理指令数据
+### 创建基本程序，第 2 部分 - 状态管理
+### 创建基本程序，第 3 部分 - 基本安全性和验证
 
+## 模块4: 中级 Solana 程序开发
 
-### instructions说明
-
-- [ ] 1. 使用量具instructions说明
-- [x] 2. [instructions说明](./module1/custom-instructions/README.md)
-- [x] 3. [构建一个电影评论应用程序](./module1/build-a-movie-review-app/README.md)
-- [x] 4. [运行回来——反序列化](./module1/run-it-back-deserialization/README.md)
-
-### 开始您自己的定制项目
-
-- [x] 1. [构建 NFT 铸币者前端](./module1/build-an-nft-minter-front-end/README.md)
-- [x] 2. [部署到 Vercel](./module1/deploy-to-vercel/README.md)
-
-## Module 2
-
-### SPL 代币
-
-### NFT + 使用 Metaplex 铸造
-
-### 在 UI 中显示 NFT
-
-### 赚取神奇的互联网货币并出售 jpeg
-
-
-## Module 3
-
-### Rust 简介
-
-### 原生 Solana 开发
-
-### 安全性和验证
-
-### NFT 质押
-
-
-## Module 4
-
-### 本地环境设置和 PDA
-
+### 本地程序开发
+### 程序派生地址
 ### 跨程序调用
 
-### 测试
+## 模块5: Anchor 项目开发
 
-### 发送质押应用程序
+### Anchor 开发简介
+### 客户端 Anchor 开发简介
+### Anchor PDA 和账户
+### Anchor CPI 和错误
+
+## 模块6: 超越基础
+
+### Solana 程序中的环境变量
+### Solana 支付
+### 版本化事务和查找表
+### Rust 程序宏
+
+## 模块7: Solana 程序安全
+
+### 如何使用程序安全模块
+### 签名人授权
+### owner 检查
+### 账户数据匹配
+### 重新初始化攻击
+### 重复的可变帐户
+### Type 角色扮演
+### Arbitrary CPIs
+### Bump seed canonicalization
+### 关闭账户和revival攻击
+### PDA共享
 
 
-## Module5
-
-### Anchor 锚简介
-
-### Anchor 中的程序
-
-### Anchor 在前端
-
-### 全栈Anchor应用程序
-
-## Module6
-
-### 船舶周
-
-> "Ship Week" 在技术开发和产品发布领域通常指的是一个特定的时间段，产品团队在这一周内专注于将新的功能或产品进行最后的调试和优化，准备好将这些新的功能或产品发布（或者说"上线"）到生产环境中去。
->
-> 这个词“Ship”在这里是一个行业术语，源自于“shipping a product”，意为“发布一个产品”。因此，“Ship Week”就是“产品发布周”，在这周内，团队的主要目标是确保新的功能或产品可以顺利地发布出去。
-
-### 随机性
-
-### 收尾工作
 
 
 ## Reference
@@ -113,11 +89,14 @@
 - [alchemy Solana docs](https://docs.alchemy.com/reference/solana-api-quickstart)
 - [Alchemy Doc](https://docs.alchemy.com/)
 - [Figment Learn](https://learn.figment.io/protocols/solana)
+- [Solana CookBook](https://solanacookbook.com/)
 
 ## 不错的Solana文章
 - [Squads blog](https://squads.so/blog)
 - [Solana Dev](https://www.soldev.app/)
-
+- [First impressions of Rust programming on Solana](https://brson.github.io/2021/06/08/rust-on-solana)
+- [Programming on Solana - An Introduction
+](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/)
 
 ## 希望后面要做的事情
 
