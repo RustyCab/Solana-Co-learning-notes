@@ -1,7 +1,5 @@
 # learn-solana
 
-
-
 ## 前置环境准备
 
 - [x] 1. [安装 Rust](https://www.rust-lang.org/tools/install)

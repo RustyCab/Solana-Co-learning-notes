@@ -7,9 +7,9 @@ entrypoint!(process_instruction);
 
 // program entrypoint's implementation
 pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    instruction_data: &[u8],
+    _program_id: &Pubkey,
+    _accounts: &[AccountInfo],
+    _instruction_data: &[u8],
 ) -> ProgramResult {
     // log a message to the blockchain
     msg!("Hello, world!");
