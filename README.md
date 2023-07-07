@@ -90,6 +90,7 @@
 - [Alchemy Doc](https://docs.alchemy.com/)
 - [Figment Learn](https://learn.figment.io/protocols/solana)
 - [Solana CookBook](https://solanacookbook.com/)
+- [Solana Terminology](https://docs.solana.com/terminology)
 
 ## 不错的Solana文章
 - [Squads blog](https://squads.so/blog)
