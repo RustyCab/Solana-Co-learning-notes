@@ -22,9 +22,9 @@ npm i
 
 
 记住步骤：
-1. 创建一个代币铸币账户
-2. 为特定钱包创建关联的代币账户
-3. 将代币铸造到该钱包
+1. 创建一个Token Mint账户
+2. 为特定钱包创建关联的Token账户
+3. 将Token铸造到该钱包
 
 
 这是 `src/index.ts` 中的步骤 1，将其放在导入之后和 main() 之上：
@@ -41,7 +41,7 @@ async function createNewMint(
     decimals: number
 ): Promise<web3.PublicKey> {
 
-    const tokenMint = await token.createMint(
+    const tokenMintAccount = await token.createMint(
         connection,
         payer,
         mintAuthority,
@@ -49,9 +49,9 @@ async function createNewMint(
         decimals
     );
 
-    console.log(`The token mint account address is ${tokenMint}`)
+    console.log(`The token mint account address is ${tokenMintAccount}`)
     console.log(
-        `Token Mint: https://explorer.solana.com/address/${tokenMint}?cluster=devnet`
+        `Token Mint: https://explorer.solana.com/address/${tokenMintAccount}?cluster=devnet`
     );
 
     return tokenMint;
@@ -63,7 +63,7 @@ async function createNewMint(
 再次强调 - `@solana/spl-token` 程序使这一切变得简单。 `tokenMint` 是代币铸造账户的地址。
 
 
-接下来，我们要创建关联的令牌帐户，将其放在 createNewMint 函数之后：
+接下来，我们要创建关联的token帐户，将其放在 createNewMint 函数之后：
 
 ```ts
 async function createTokenAccount(
@@ -150,7 +150,7 @@ async function main() {
 ```
 
 
-运行 `npm run start` - 您应该会看到终端中记录了三个资源管理器链接。 （注意：请确保您有 `@solana/spl-token@0.2.0` ，否则会显示错误。要安装，请在终端中输入 `npm uninstall` `@solana/spl-token` 和 `npm install @solana/spl-token@0.2.0` ，保存代币铸造帐户地址。您'稍后会需要它。打开最后一个链接并向下滚动到代币余额部分：
+运行 `npm run start` - 您应该会看到终端中记录了三个资源管理器链接。 （注意：请确保您有 `@solana/spl-token@0.2.0` ，否则会显示错误。要安装，请在终端中输入 `npm uninstall @solana/spl-token` 和 `npm install @solana/spl-token@0.2.0` ，保存代币铸造帐户地址。您'稍后会需要它。打开最后一个链接并向下滚动到代币余额部分：
 
 ![](./img/upload_1.png)
 

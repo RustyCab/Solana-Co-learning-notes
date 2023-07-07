@@ -1,6 +1,7 @@
 # learn-solana
 
 
+
 ## 前置环境准备
 
 - [x] 1. [安装 Rust](https://www.rust-lang.org/tools/install)
@@ -18,6 +19,7 @@
     - [Zed](https://zed.dev/download)
 
 - [x] 8. [Solan 前端模版配置](./how-to-setting-solana-front.md)
+- [X] 9. [Solana Rust program Quick start](./docs/offical/rust-program-quickstart.md)
 
 ## Module1: 客户端与 Solana 网络的交互
 
