@@ -58,7 +58,7 @@ async function airdropSolIfNeeded(
   console.log('Current balance is', balance / Web3.LAMPORTS_PER_SOL, 'SOL');
 
   // 1 SOL should be enough for almost anything you wanna do
-  if (balance / Web3.LAMPORTS_PER_SOL < 1) {
+  if (balance / Web3.LAMPORTS_PER_SOL < 4) {
     // You can only get up to 2 SOL per request
     console.log('Airdropping 1 SOL');
     const airdropSignature = await connection.requestAirdrop(
