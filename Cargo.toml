@@ -2,6 +2,7 @@
 members = [
     "tools/*",
     "docs/code/*",
+    "module3/contract/hello-world",
 ]
 
 resolver = "2"
