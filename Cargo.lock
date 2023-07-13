@@ -817,6 +817,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "notes"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "solana-program",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
