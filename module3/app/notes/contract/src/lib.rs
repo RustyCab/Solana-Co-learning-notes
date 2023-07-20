@@ -29,7 +29,7 @@ pub fn process_instruction(
         NoteInstruction::UpdateNote {
             title: _,
             body: _,
-            id,
+            id: _,
         } => {
             // Execute program code to update a note
         }

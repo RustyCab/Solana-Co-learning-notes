@@ -11,6 +11,9 @@ pub fn process_instruction(
     _instruction_data: &[u8],
 ) -> ProgramResult {
     msg!("Hello, world!");
+    msg!("Hello, Rust!");
+    msg!("Hello, Solna!");
+    msg!("Hello, Solana Co-Learn!");
 
     Ok(())
 }

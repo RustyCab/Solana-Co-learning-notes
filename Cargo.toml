@@ -2,10 +2,9 @@
 members = [
     "tools/*",
     "docs/code/*",
-    "module3/contract/hello-world",
-    "module3/contract/hello-world-anchor/programs/hello-world-anchor",
-    "module3/contract/movies",
-    "module3/contract/notes",
+    "module3/app/hello/contract",
+    "module3/app/movies/contract",
+    "module3/app/notes/contract",
 ]
 
 resolver = "2"
