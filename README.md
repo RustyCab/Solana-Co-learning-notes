@@ -92,6 +92,7 @@
 - [Solana CookBook](https://solanacookbook.com/)
 - [Solana Terminology](https://docs.solana.com/terminology)
 - [Solana Program example](https://github.com/solana-developers/program-examples/tree/main)
+- [Solana Developer Github Repo](https://github.com/solana-developers)
 
 ## 不错的Solana文章
 - [Squads blog](https://squads.so/blog)
