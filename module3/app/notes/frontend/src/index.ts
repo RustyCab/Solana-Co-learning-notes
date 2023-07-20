@@ -1,5 +1,5 @@
 import * as web3 from "@solana/web3.js";
-
+import { Notes } from "./notes";
 
 async function main() {
 
@@ -11,21 +11,53 @@ async function main() {
   // create an empty transaction
   const transaction = new web3.Transaction();
 
+  const notes = new Notes(4, 'The Godfather', `One of Hollywood's greatest critical and commercial successes。 AYK`);
+
+  // contruct create note instruction
+  const buffer = notes.serialize_update();
+
+  // load the payer's Keypair from a local file
+  const keypair = JSON.parse(fs.readFileSync(process.env.PRIVATE_KEY, 'utf-8'));
+  const keypairUint8Array = new Uint8Array(Object.values(keypair));
+  const wallet = web3.Keypair.fromSecretKey(keypairUint8Array);
+
+
+  const [pda] = web3.PublicKey.findProgramAddressSync(
+    [wallet.publicKey.toBuffer(), new TextEncoder().encode(notes.title)],
+    new web3.PublicKey(process.env.PROGRAM_ID || "")
+  )
+
   // add a hello world program instruction to the transaction
   transaction.add(
     new web3.TransactionInstruction({
-      keys: [],
+      keys: [
+        {
+          // Your account will pay the fees, so it's writing to the network
+          pubkey: wallet.publicKey,
+          isSigner: true,
+          isWritable: false,
+        },
+        {
+          // The PDA will store the movie review
+          pubkey: pda,
+          isSigner: false,
+          isWritable: true
+        },
+        {
+          // The system program will be used for creating the PDA
+          pubkey: web3.SystemProgram.programId,
+          isSigner: false,
+          isWritable: false
+        }
+      ],
+      // Here's the most important part!
+      data: buffer,
       programId: new web3.PublicKey(process.env.PROGRAM_ID || ""),
     }),
   );
 
   // load conection to the Solana cluster
   const connection = new web3.Connection(process.env.SOLANA_PROVIDER_URL || "");
-
-  // load the payer's Keypair from a local file
-  const keypair = JSON.parse(fs.readFileSync(process.env.PRIVATE_KEY, 'utf-8'));
-  const keypairUint8Array = new Uint8Array(Object.values(keypair));
-  const wallet = web3.Keypair.fromSecretKey(keypairUint8Array);
 
   // send the transaction to the Solana cluster
   console.log("Sending transaction...");
@@ -36,7 +68,7 @@ async function main() {
     [wallet],
   );
 
-  console.log("Transaction sent with hash:", txHash);
+  console.log(`Transaction submitted: https://explorer.solana.com/tx/${txHash}?cluster=devnet`)
 }
 
 main()

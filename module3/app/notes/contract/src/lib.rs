@@ -17,6 +17,8 @@ pub fn process_instruction(
     msg!("Hello World Rust program entrypoint");
     // Call unpack to deserialize instruction_data
     let instruction = NoteInstruction::unpack(instruction_data)?;
+    msg!("instruction: {:?}", instruction);
+
     // Match the returned data struct to what you expect
     match instruction {
         NoteInstruction::CreateNote { title, body, id } => {

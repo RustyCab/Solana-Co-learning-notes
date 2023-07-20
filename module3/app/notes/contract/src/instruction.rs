@@ -1,6 +1,8 @@
 use borsh::BorshDeserialize;
+use solana_program::msg;
 use solana_program::program_error::ProgramError;
 
+#[derive(Debug)]
 pub enum NoteInstruction {
     CreateNote {
         title: String,
@@ -17,7 +19,7 @@ pub enum NoteInstruction {
     },
 }
 
-#[derive(BorshDeserialize)]
+#[derive(BorshDeserialize, Debug)]
 pub struct NoteInstructionPayload {
     pub id: u64,
     pub title: String,
@@ -33,8 +35,13 @@ impl NoteInstruction {
         let (&variant, rest) = input
             .split_first()
             .ok_or(ProgramError::InvalidInstructionData)?;
+        msg!("variant: {}", variant);
+
         // Use the temporary payload struct to deserialize
-        let payload = NoteInstructionPayload::try_from_slice(rest).unwrap();
+        let payload =
+            NoteInstructionPayload::try_from_slice(rest).map_err(|_| ProgramError::Custom(99))?;
+        msg!("payload: {:?}", payload);
+
         // Match the variant to determine which data struct is expected by
         // the function and return the TestStruct or an error
         Ok(match variant {
