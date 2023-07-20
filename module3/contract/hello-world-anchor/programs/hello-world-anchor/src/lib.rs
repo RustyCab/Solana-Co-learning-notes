@@ -6,7 +6,7 @@ declare_id!("CqBpYgLKGfcyCz6vdsBTaGS5qvn3efogDQEu8piZxvHi");
 pub mod hello_world_anchor {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
         msg!("Hello, world from Anchor!");
         Ok(())
     }
