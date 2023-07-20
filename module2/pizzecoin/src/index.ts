@@ -4,7 +4,7 @@ import * as token from "@solana/spl-token"
 
 
 async function main() {
-  const connection = new web3.Connection("https://special-warmhearted-brook.solana-devnet.discover.quiknode.pro/012a061ee8fb8bfdd7d335d2c48ae4e464ff436d/")
+  const connection = new web3.Connection(process.env.DEVNET_URL ?? "")
   const user = await initializeKeypair(connection)
 
   console.log("PublicKey:", user.publicKey.toBase58())
