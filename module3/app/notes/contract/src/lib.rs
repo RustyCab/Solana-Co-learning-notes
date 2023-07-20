@@ -19,22 +19,27 @@ pub fn process_instruction(
     let instruction = NoteInstruction::unpack(instruction_data)?;
     // Match the returned data struct to what you expect
     match instruction {
-        NoteInstruction::CreateNote {
-            title: _,
-            body: _,
-            id: _,
-        } => {
+        NoteInstruction::CreateNote { title, body, id } => {
             // Execute program code to create a note
+            msg!(
+                "Execute program code to create a note -> title: {}, body: {}, id: {}",
+                title,
+                body,
+                id
+            );
         }
-        NoteInstruction::UpdateNote {
-            title: _,
-            body: _,
-            id: _,
-        } => {
+        NoteInstruction::UpdateNote { title, body, id } => {
             // Execute program code to update a note
+            msg!(
+                "Execute program code to update a note -> title: {}, body: {}, id: {}",
+                title,
+                body,
+                id
+            );
         }
-        NoteInstruction::DeleteNote { id: _ } => {
+        NoteInstruction::DeleteNote { id } => {
             // Execute program code to delete a note
+            msg!("Execute program code to delete a note -> id: {}", id);
         }
     }
 
