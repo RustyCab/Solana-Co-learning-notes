@@ -164,3 +164,517 @@ let (pda, bump_seed) = Pubkey::find_program_address(&[
 ```rust
 let associated_token_address = get_associated_token_address(&wallet_address, &token_mint_address);
 ```
+
+在底层，相关的令牌地址是使用钱包地址、令牌程序ID和令牌铸币地址作为种子来找到的PDA。这提供了一种确定性的方式，可以找到与特定令牌铸币相关的任何钱包地址的令牌账户。
+
+```rust
+fn get_associated_token_address_and_bump_seed_internal(
+    wallet_address: &Pubkey,
+    token_mint_address: &Pubkey,
+    program_id: &Pubkey,
+    token_program_id: &Pubkey,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            &wallet_address.to_bytes(),
+            &token_program_id.to_bytes(),
+            &token_mint_address.to_bytes(),
+        ],
+        program_id,
+    )
+}
+```
+
+您使用的种子和PDA账户之间的映射将高度依赖于您的具体程序。虽然这不是关于系统设计或架构的课程，但值得指出一些准则：
+
+- 使用在PDA衍生时已知的种子
+- 请谨慎考虑将哪些数据分组到一个账户中
+- 对每个账户中使用的数据结构要慎重考虑
+- 简单通常更好
+
+## 演示
+
+让我们一起练习之前课程中我们已经做过的电影评论程序。如果你没有完成前一课程，也不用担心 - 你应该可以跟上进度。
+
+作为一个提醒，电影评论程序允许用户创建电影评论。这些评论使用初始化器的公钥和所评论电影的标题存储在一个帐户中，该帐户是通过一个派生的PDA创建的。
+
+之前，我们成功实现了以安全方式更新电影评论的功能。在这个演示中，我们将添加用户对电影评论进行评论的功能。我们将利用构建此功能的机会，通过使用PDA账户来组织评论存储的方式。
+
+### 1. 获取起始代码
+
+首先，您可以在[起始分支](https://github.com/Unboxed-Software/solana-movie-program/tree/starter)上找到起始代码。
+
+如果你一直在关注电影评论的演示，你会注意到这是我们迄今为止构建的程序。之前，我们使用Solana Playground来编写、构建和部署我们的代码。在本课程中，我们将在本地构建和部署程序。
+
+打开文件夹，然后运行 `cargo build-sbf` 来构建程序。`cargo build-sbf` 命令将输出部署程序的指令。
+
+```bash
+cargo build-sbf
+```
+
+通过复制 `cargo build-sbf` 的输出并运行 `solana program deploy` 命令来部署程序。
+
+```bash
+solana program deploy <PATH>
+```
+
+您可以使用电影评论[前端](https://github.com/Unboxed-Software/solana-movie-frontend/tree/solution-update-reviews)来测试该程序，并使用您刚刚部署的程序ID进行更新。请确保使用solution-update-reviews分支。
+
+### 2. 规划账户结构
+
+添加评论意味着我们需要就如何存储与每个评论相关的数据做出一些决策。在这里，一个好的结构的标准是：
+
+- 不过分复杂
+- 数据很容易检索
+- 每个评论都与其关联的评论有一些联系
+
+为了做到这一点，我们将创建两种新的账户类型：
+
+- 评论计数账户
+- 评论账户
+
+每个评论都会有一个评论计数器账户，每个评论都会有一个评论账户。评论计数器账户将通过使用评论地址作为种子来找到评论计数器PDA，并使用静态字符串“comment”作为种子。
+
+评论账户将以同样的方式与评论关联。然而，它不会将“评论”字符串作为种子，而是使用实际的评论计数作为种子。这样，客户端可以通过以下方式轻松地检索给定评论的评论：
+
+1. 阅读评论计数器账户上的数据，以确定评论数量。
+2. 其中n是评论总数，循环n次。循环的每一次迭代将使用评论地址和当前数字作为种子来生成一个PDA。结果是n个PDA，每个PDA都是存储评论的账户地址。
+3.获取每个n个PDA的账户，并读取每个账户中存储的数据。
+
+这确保了我们的每一个账户都可以通过预先已知的数据进行确定性检索。
+
+
+为了实施这些变化，我们需要做以下几点：
+
+- 定义结构体来表示评论计数器和评论账户
+- 更新现有的MovieAccountState以包含一个鉴别器（稍后详细介绍）
+- 添加一个指令变体来表示添加评论指令
+- 更新现有的add_movie_review指令处理函数，以包括创建评论计数器账户
+- 创建一个新的add_comment指令处理函数
+
+### 3. 定义MovieCommentCounter和MovieComment结构体
+
+回想一下，state.rs文件定义了我们的程序用来填充新账户的数据字段的结构体。
+
+我们需要定义两个新的结构体来实现评论功能。
+
+1. 电影评论计数器 - 用于存储与评论相关的评论数量计数器
+
+2. 电影评论 - 用于存储与每条评论相关的数据
+
+首先，让我们定义我们程序将使用的结构体。请注意，我们正在为每个结构体添加一个鉴别器字段，包括现有的MovieAccountState。由于我们现在有多种账户类型，我们需要一种方法来仅从客户端获取所需的账户类型。这个鉴别器是一个字符串，可以用来在获取程序账户时过滤账户。
+
+```rust
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct MovieAccountState {
+    pub discriminator: String,
+    pub is_initialized: bool,
+    pub reviewer: Pubkey,
+    pub rating: u8,
+    pub title: String,
+    pub description: String,
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct MovieCommentCounter {
+    pub discriminator: String,
+    pub is_initialized: bool,
+    pub counter: u64
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct MovieComment {
+    pub discriminator: String,
+    pub is_initialized: bool,
+    pub review: Pubkey,
+    pub commenter: Pubkey,
+    pub comment: String,
+    pub count: u64
+}
+
+impl Sealed for MovieAccountState {}
+
+impl IsInitialized for MovieAccountState {
+    fn is_initialized(&self) -> bool {
+        self.is_initialized
+    }
+}
+
+impl IsInitialized for MovieCommentCounter {
+    fn is_initialized(&self) -> bool {
+        self.is_initialized
+    }
+}
+
+impl IsInitialized for MovieComment {
+    fn is_initialized(&self) -> bool {
+        self.is_initialized
+    }
+}
+
+```
+
+
+由于我们在现有的结构体中添加了一个新的判别字段，账户大小计算需要进行更改。让我们利用这个机会稍微整理一下我们的代码。我们将为上述三个结构体中的每一个添加一个常量DISCRIMINATOR，以及一个常量SIZE或函数get_account_size，这样我们在初始化账户时可以快速获取所需的大小。
+
+```rust
+impl MovieAccountState {
+    pub const DISCRIMINATOR: &'static str = "review";
+
+    pub fn get_account_size(title: String, description: String) -> usize {
+        return (4 + MovieAccountState::DISCRIMINATOR.len())
+            + 1
+            + 1
+            + (4 + title.len())
+            + (4 + description.len());
+    }
+}
+
+impl MovieCommentCounter {
+    pub const DISCRIMINATOR: &'static str = "counter";
+    pub const SIZE: usize = (4 + MovieCommentCounter::DISCRIMINATOR.len()) + 1 + 8;
+}
+
+impl MovieComment {
+    pub const DISCRIMINATOR: &'static str = "comment";
+
+    pub fn get_account_size(comment: String) -> usize {
+        return (4 + MovieComment::DISCRIMINATOR.len()) + 1 + 32 + 32 + (4 + comment.len()) + 8;
+    }
+}
+```
+
+现在无论在哪里我们需要使用鉴别器或账户大小，我们都可以使用这个实现，而不会冒险出现意外的拼写错误。
+
+### 4. 创建AddComment指令
+
+回想一下，instruction.rs文件定义了我们的程序将接受的指令以及如何对每个指令的数据进行反序列化。我们需要为添加评论添加一个新的指令变体。让我们首先在MovieInstruction枚举中添加一个新的变体AddComment。
+
+```rust
+pub enum MovieInstruction {
+    AddMovieReview {
+        title: String,
+        rating: u8,
+        description: String
+    },
+    UpdateMovieReview {
+        title: String,
+        rating: u8,
+        description: String
+    },
+    AddComment {
+        comment: String
+    }
+}
+```
+
+接下来，让我们创建一个CommentPayload结构体来表示与这个新指令相关的指令数据。我们将在账户中包含的大部分数据都是与传入程序的账户相关联的公钥，所以我们实际上只需要一个字段来表示评论文本。
+
+
+```rust
+#[derive(BorshDeserialize)]
+struct CommentPayload {
+    comment: String
+}
+```
+
+现在让我们来更新一下如何解析指令数据。请注意，我们已经将指令数据的反序列化移动到了每个匹配的情况中，使用了每个指令的相关载荷结构体。
+
+```rust
+impl MovieInstruction {
+    pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
+        let (&variant, rest) = input.split_first().ok_or(ProgramError::InvalidInstructionData)?;
+        Ok(match variant {
+            0 => {
+                let payload = MovieReviewPayload::try_from_slice(rest).unwrap();
+                Self::AddMovieReview {
+                title: payload.title,
+                rating: payload.rating,
+                description: payload.description }
+            },
+            1 => {
+                let payload = MovieReviewPayload::try_from_slice(rest).unwrap();
+                Self::UpdateMovieReview {
+                    title: payload.title,
+                    rating: payload.rating,
+                    description: payload.description
+                }
+            },
+            2 => {
+                let payload = CommentPayload::try_from_slice(rest).unwrap();
+                Self::AddComment {
+                    comment: payload.comment
+                }
+            }
+            _ => return Err(ProgramError::InvalidInstructionData)
+        })
+    }
+}
+```
+最后，让我们在processor.rs中更新process_instruction函数，以使用我们创建的新指令变体。
+
+
+在processor.rs中，将state.rs中的新结构体引入作用域。
+
+```rust
+use crate::state::{MovieAccountState, MovieCommentCounter, MovieComment};
+```
+
+然后在process_instruction中，让我们将反序列化的AddComment指令数据与我们即将实现的add_comment函数进行匹配。
+
+```rust
+pub fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8]
+) -> ProgramResult {
+    let instruction = MovieInstruction::unpack(instruction_data)?;
+    match instruction {
+        MovieInstruction::AddMovieReview { title, rating, description } => {
+            add_movie_review(program_id, accounts, title, rating, description)
+        },
+        MovieInstruction::UpdateMovieReview { title, rating, description } => {
+            update_movie_review(program_id, accounts, title, rating, description)
+        },
+
+        MovieInstruction::AddComment { comment } => {
+            add_comment(program_id, accounts, comment)
+        }
+    }
+}
+```
+
+### 5. 更新 add_movie_review 函数以创建评论计数器账户
+
+在我们实现add_comment函数之前，我们需要更新add_movie_review函数以创建评论计数器账户。
+
+请记住，此账户将跟踪与相关评论相关的评论总数。它的地址将是使用电影评论地址和单词“评论”作为种子生成的PDA。请注意，我们存储计数器的方式只是一种设计选择。我们也可以在原始电影评论账户中添加一个“计数器”字段。
+
+在add_movie_review函数中，让我们添加一个pda_counter来表示我们将与电影评论账户一起初始化的新计数器账户。这意味着我们现在希望通过accounts参数将四个账户传递到add_movie_review函数中。
+
+```rust
+let account_info_iter = &mut accounts.iter();
+
+let initializer = next_account_info(account_info_iter)?;
+let pda_account = next_account_info(account_info_iter)?;
+let pda_counter = next_account_info(account_info_iter)?;
+let system_program = next_account_info(account_info_iter)?;
+```
+
+接下来，我们需要检查total_len是否小于1000字节，但由于我们添加了鉴别器，total_len不再准确。让我们将total_len替换为调用MovieAccountState::get_account_size：
+
+```rust
+let account_len: usize = 1000;
+
+if MovieAccountState::get_account_size(title.clone(), description.clone()) > account_len {
+    msg!("Data length is larger than 1000 bytes");
+    return Err(ReviewError::InvalidDataLength.into());
+}
+```
+
+请注意，这也需要在update_movie_review函数中进行更新，以使该指令正常工作。
+
+一旦我们初始化了审查账户，我们还需要使用MovieAccountState结构中指定的新字段来更新account_data。
+
+```rust
+account_data.discriminator = MovieAccountState::DISCRIMINATOR.to_string();
+account_data.reviewer = *initializer.key;
+account_data.title = title;
+account_data.rating = rating;
+account_data.description = description;
+account_data.is_initialized = true;
+```
+
+最后，让我们在add_movie_review函数中添加逻辑来初始化计数器账户。这意味着：
+
+1. 计算柜台账户的租金豁免金额
+2. 使用评论地址和字符串“comment”作为种子来推导计数PDA
+3. 调用系统程序创建账户
+4. 设置起始计数器值
+5. 将账户数据序列化并从函数中返回
+
+所有这些都应该添加到add_movie_review函数的末尾，然后再加上Ok(())。
+
+```rust
+msg!("create comment counter");
+let rent = Rent::get()?;
+let counter_rent_lamports = rent.minimum_balance(MovieCommentCounter::SIZE);
+
+let (counter, counter_bump) =
+    Pubkey::find_program_address(&[pda.as_ref(), "comment".as_ref()], program_id);
+if counter != *pda_counter.key {
+    msg!("Invalid seeds for PDA");
+    return Err(ProgramError::InvalidArgument);
+}
+
+invoke_signed(
+    &system_instruction::create_account(
+        initializer.key,
+        pda_counter.key,
+        counter_rent_lamports,
+        MovieCommentCounter::SIZE.try_into().unwrap(),
+        program_id,
+    ),
+    &[
+        initializer.clone(),
+        pda_counter.clone(),
+        system_program.clone(),
+    ],
+    &[&[pda.as_ref(), "comment".as_ref(), &[counter_bump]]],
+)?;
+msg!("comment counter created");
+
+let mut counter_data =
+    try_from_slice_unchecked::<MovieCommentCounter>(&pda_counter.data.borrow()).unwrap();
+
+msg!("checking if counter account is already initialized");
+if counter_data.is_initialized() {
+    msg!("Account already initialized");
+    return Err(ProgramError::AccountAlreadyInitialized);
+}
+
+counter_data.discriminator = MovieCommentCounter::DISCRIMINATOR.to_string();
+counter_data.counter = 0;
+counter_data.is_initialized = true;
+msg!("comment count: {}", counter_data.counter);
+counter_data.serialize(&mut &mut pda_counter.data.borrow_mut()[..])?;
+```
+
+现在当创建新的评论时，会初始化两个账户：
+
+1. 第一个是存储评论内容的审核账户。这与我们开始使用的程序版本没有变化。
+
+2. 第二个账户存储评论计数器
+
+### 6. 实施添加评论
+
+最后，让我们实现我们的add_comment函数来创建新的评论账户。
+
+当为评论创建新评论时，我们将在评论计数器PDA账户上递增计数，并使用评论地址和当前计数派生评论账户的PDA。
+
+就像其他指令处理函数一样，我们将从传入程序的账户中进行迭代。然后，在执行任何其他操作之前，我们需要对计数器账户进行反序列化，以便我们可以访问当前的评论计数。
+
+```rust
+pub fn add_comment(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    comment: String
+) -> ProgramResult {
+    msg!("Adding Comment...");
+    msg!("Comment: {}", comment);
+
+    let account_info_iter = &mut accounts.iter();
+
+    let commenter = next_account_info(account_info_iter)?;
+    let pda_review = next_account_info(account_info_iter)?;
+    let pda_counter = next_account_info(account_info_iter)?;
+    let pda_comment = next_account_info(account_info_iter)?;
+    let system_program = next_account_info(account_info_iter)?;
+
+    let mut counter_data = try_from_slice_unchecked::<MovieCommentCounter>(&pda_counter.data.borrow()).unwrap();
+
+    Ok(())
+}
+```
+
+
+现在我们可以继续进行剩下的步骤，因为我们已经获得了柜台数据
+
+1. 计算新评论账户的租金免税金额
+2. 使用评论地址和当前评论计数作为种子来推导评论账户的PDA
+3. 调用系统程序创建新的评论账户
+4. 为新创建的账户设置适当的值
+5. 将账户数据序列化并从函数中返回
+
+
+```rust
+pub fn add_comment(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    comment: String
+) -> ProgramResult {
+    msg!("Adding Comment...");
+    msg!("Comment: {}", comment);
+
+    let account_info_iter = &mut accounts.iter();
+
+    let commenter = next_account_info(account_info_iter)?;
+    let pda_review = next_account_info(account_info_iter)?;
+    let pda_counter = next_account_info(account_info_iter)?;
+    let pda_comment = next_account_info(account_info_iter)?;
+    let system_program = next_account_info(account_info_iter)?;
+
+    let mut counter_data = try_from_slice_unchecked::<MovieCommentCounter>(&pda_counter.data.borrow()).unwrap();
+
+    let account_len = MovieComment::get_account_size(comment.clone());
+
+    let rent = Rent::get()?;
+    let rent_lamports = rent.minimum_balance(account_len);
+
+    let (pda, bump_seed) = Pubkey::find_program_address(&[pda_review.key.as_ref(), counter_data.counter.to_be_bytes().as_ref(),], program_id);
+    if pda != *pda_comment.key {
+        msg!("Invalid seeds for PDA");
+        return Err(ReviewError::InvalidPDA.into())
+    }
+
+    invoke_signed(
+        &system_instruction::create_account(
+        commenter.key,
+        pda_comment.key,
+        rent_lamports,
+        account_len.try_into().unwrap(),
+        program_id,
+        ),
+        &[commenter.clone(), pda_comment.clone(), system_program.clone()],
+        &[&[pda_review.key.as_ref(), counter_data.counter.to_be_bytes().as_ref(), &[bump_seed]]],
+    )?;
+
+    msg!("Created Comment Account");
+
+    let mut comment_data = try_from_slice_unchecked::<MovieComment>(&pda_comment.data.borrow()).unwrap();
+
+    msg!("checking if comment account is already initialized");
+    if comment_data.is_initialized() {
+        msg!("Account already initialized");
+        return Err(ProgramError::AccountAlreadyInitialized);
+    }
+
+    comment_data.discriminator = MovieComment::DISCRIMINATOR.to_string();
+    comment_data.review = *pda_review.key;
+    comment_data.commenter = *commenter.key;
+    comment_data.comment = comment;
+    comment_data.is_initialized = true;
+    comment_data.serialize(&mut &mut pda_comment.data.borrow_mut()[..])?;
+
+    msg!("Comment Count: {}", counter_data.counter);
+    counter_data.counter += 1;
+    counter_data.serialize(&mut &mut pda_counter.data.borrow_mut()[..])?;
+
+    Ok(())
+}
+```
+
+### 7. 构建和部署
+
+我们已经准备好构建和部署我们的程序了！
+
+
+通过运行`cargo build-sbf` 来构建更新的程序。然后通过运行在控制台打印的`solana program deploy`命令来部署程序。
+
+您可以通过提交带有正确指令数据的交易来测试您的程序。您可以创建自己的脚本，或者随意使用这个[前端](https://github.com/Unboxed-Software/solana-movie-frontend/tree/solution-add-comments)界面。请确保使用 `solution-add-comments` 分支，并将 `utils/constants.ts` 中的 MOVIE_REVIEW_PROGRAM_ID 替换为您的程序ID，否则前端将无法与您的程序配合工作。
+
+请记住，我们对审查账户进行了重大更改（即添加了一个鉴别器）。如果您在部署此程序时使用了之前使用过的相同程序ID，由于数据不匹配，此前创建的任何审查都不会显示在此前端。
+
+
+如果你需要更多时间来熟悉这些概念，可以在继续之前查看解决方案代码。请注意，解决方案代码位于链接仓库的solution-add-comments分支上。
+
+## 挑战
+
+现在轮到你独立构建一些东西了！继续使用我们在之前课程中使用过的学生介绍程序。学生介绍程序是一个Solana程序，可以让学生们介绍自己。该程序接受用户的姓名和简短留言作为指令数据，并创建一个账户来存储这些数据。在这个挑战中，你应该：
+
+1. 添加一条指示，允许其他用户回复介绍
+2. 在本地构建和部署程序
+
+如果你之前没有跟随过之前的课程或者没有保存你之前的工作，请随意使用这个存储库的[起始代码](https://github.com/Unboxed-Software/solana-student-intro-program/tree/starter)。
+
+如果可以的话，尽量独立完成这个任务！但如果遇到困难，可以参考[解决方案代码](https://github.com/Unboxed-Software/solana-student-intro-program/tree/solution-add-replies)。请注意，解决方案代码位于solution-add-replies分支上，你的代码可能会稍有不同。
