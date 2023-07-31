@@ -29,6 +29,7 @@
 - [安装Rust](https://www.rust-lang.org/tools/install)
 - [安装Solana工具套件](https://docs.solana.com/cli/install-solana-cli-tools)
 
+---
 
 ### 在Windows上设置（带有Linux）
 
@@ -51,7 +52,9 @@ wsl --install
 
 如果您正在使用较旧版本的Windows，请按照[这里](https://docs.microsoft.com/en-us/windows/wsl/install-manual)的说明进行操作。
 
-您可以在这里阅读更多关于安装WSL的信息。
+您可以在[这里](https://learn.microsoft.com/en-us/windows/wsl/install)阅读更多关于安装WSL的信息。
+
+---
 
 #### 下载Ubuntu
 
@@ -65,6 +68,8 @@ wsl --install
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
+---
+
 #### 下载 Solana CLI
 
 现在我们准备下载适用于Linux的Solana CLI。请在Ubuntu终端中运行以下命令。您可以[在此处阅读](https://docs.solana.com/cli/install-solana-cli-tools)有关下载Solana CLI的更多信息。
@@ -72,6 +77,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/v1.16.6/install)"
 ```
+
+---
 
 ### 在 macOS 上进行设置
 
@@ -89,11 +96,16 @@ sh -c "$(curl -sSfL https://release.solana.com/v1.16.6/install)"
 
 您可以在[这里](https://docs.solana.com/cli/install-solana-cli-tools)了解更多关于下载Solana CLI的信息。
 
+---
+
+
 ### Solana CLI基础
 
 Solana CLI是一个命令行界面工具，提供了一系列命令，用于与Solana集群进行交互。
 
 在本课程中，我们将介绍一些最常见的命令，但您始终可以通过运行`solana --help`来查看所有可能的Solana CLI命令列表。
+
+---
 
 #### Solana CLI 配置
 
@@ -132,6 +144,8 @@ solana config set --url mainnet-beta
 solana config set --keypair ~/<FILE_PATH>
 ```
 
+---
+
 #### 测试验证器
 
 你会发现在测试和调试时运行本地验证器比部署到开发网络更有帮助。
@@ -143,6 +157,8 @@ solana config set --keypair ~/<FILE_PATH>
 通常在打开一个新的控制台并在测试验证器旁边运行`solana logs`命令会很有帮助。这将创建另一个持续进行的进程，用于流式传输与您配置的集群相关的日志。
 
 如果您的CLI配置指向本地主机，则日志将始终与您创建的测试验证器相关联，但您也可以从其他集群（如Devnet和Mainnet Beta）流式传输日志。当从其他集群流式传输日志时，您需要在命令中包含一个程序ID，以限制您所看到的日志仅针对您的特定程序。
+
+---
 
 #### 密钥对
 
@@ -178,6 +194,8 @@ solana airdrop 2
 
 到目前为止，我们已经介绍了一些CLI命令，这些命令应该能帮助您快速解决那些问题。
 
+---
+
 ### 在您的本地环境中开发Solana程序
 
 尽管Solana Playground非常有帮助，但自己的本地开发环境的灵活性是无法比拟的。随着您构建更复杂的程序，您可能会将它们与一个或多个正在本地环境中开发的客户端集成在一起。在本地编写、构建和部署程序时，程序与客户端之间的测试通常更简单。
@@ -192,7 +210,7 @@ cargo new --lib <PROJECT_DIRECTORY_NAME>
 
 这个命令将在命令的末尾创建一个以您指定的名称命名的新目录。这个新目录将包含一个描述包的`Cargo.toml`清单文件。
 
-清单文件包含元数据，如名称、版本和依赖项（包）。要编写Solana程序，您需要更新Cargo.toml文件，将solana-program作为依赖项包括进去。您可能还需要添加下面显示的`[lib]`和crate-type行。
+清单文件包含元数据，如名称、版本和依赖项（包）。要编写Solana程序，您需要更新`Cargo.toml`文件，将`solana-program`作为依赖项包括进去。您可能还需要添加下面显示的`[lib]`和`crate-type`行。
 
 ```toml
 [package]
@@ -211,6 +229,8 @@ crate-type = ["cdylib", "lib"]
 ```
 
 在那个时候，你可以开始在src文件夹中编写你的程序。
+
+---
 
 #### 构建和部署
 
@@ -235,6 +255,9 @@ The program address will default to this keypair (override with --program-id):
 solana program deploy <PATH>
 ```
 
+---
+
+
 ### 演示
 
 让我们通过构建和部署我们在Hello World课程中创建的“Hello World！”程序来进行练习。
@@ -249,7 +272,7 @@ solana program deploy <PATH>
 cargo new --lib solana-hello-world-local
 ```
 
-记得更新 cargo.toml 文件，将 solana-program 添加为依赖项，并检查 crate-type 是否已经存在。
+记得更新 cargo.toml 文件，将 `solana-program` 添加为依赖项，并检查 `crate-type` 是否已经存在。
 
 ```toml
 [package]
@@ -263,6 +286,8 @@ solana-program = "~1.8.14"
 [lib]
 crate-type = ["cdylib", "lib"]
 ```
+
+---
 
 #### 2. 编写你的程序
 
@@ -310,6 +335,8 @@ solana config get
 solana-test-validator
 ```
 
+---
+
 #### 4. 构建和部署
 
 我们现在准备好构建和部署我们的程序了。通过运行 `cargo build-sbf` 命令来构建程序。
@@ -326,6 +353,8 @@ solana program deploy <PATH>
 
 solana程序部署将输出您的程序的程序ID。您现在可以在[Solana Explorer](https://explorer.solana.com/?cluster=custom)上查找已部署的程序（对于本地主机，请选择“自定义RPC URL”作为集群）。
 
+---
+
 #### 5. 查看程序日志
 
 在我们调用程序之前，打开一个单独的终端并运行`solana logs`命令。这将允许我们在终端中查看程序日志。
@@ -339,6 +368,8 @@ solana logs <PROGRAM_ID>
 在`index.ts`中用刚刚部署的程序ID替换掉原来的程序ID，然后运行`npm install`，接着运行npm start。这将返回一个Solana Explorer的URL。将URL复制到浏览器中，在Solana Explorer上查找该交易，并检查程序日志中是否打印了“Hello, world!”。或者，您可以在运行`solana logs`命令的终端中查看程序日志。
 
 就是这样！您刚刚在本地开发环境中创建并部署了您的第一个程序。
+
+---
 
 ### 挑战
 
